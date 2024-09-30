@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'package:colorful_safe_area/colorful_safe_area.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:task/model/data_model.dart';
+import 'package:task/utils/app_color.dart';
 
 class ListViewScreen extends StatefulWidget {
   const ListViewScreen({super.key});
@@ -15,13 +17,13 @@ class _ListViewScreenState extends State<ListViewScreen> {
   TextEditingController numberController = TextEditingController();
   TextEditingController updateNameController = TextEditingController();
   TextEditingController updateNumberController = TextEditingController();
-  List<DataModel> userList = [];
-  bool addFieldActive = false;
-  bool isUpdating = false;
-  bool deleteBottomSheetActive = false;
   GlobalKey<FormState> formkey = GlobalKey();
   GlobalKey<FormState> updatekey = GlobalKey();
+  List<DataModel> userList = [];
   List<DataModel> selectedItems = [];
+  bool addFieldActive = false;
+  bool isUpdating = false;
+  // bool bottomSheetActive = false;
   bool isTileHovered = false;
   int? hoverIndex;
 
@@ -39,7 +41,7 @@ class _ListViewScreenState extends State<ListViewScreen> {
     List<String> userStringList = prefs.getStringList('userList') ?? [];
     userList = [];
     if (userStringList.isNotEmpty) {
-      for (var element in userStringList) {
+      for (String element in userStringList) {
         userList.add(DataModel.fromJson(jsonDecode(element)));
       }
     }
@@ -80,7 +82,6 @@ class _ListViewScreenState extends State<ListViewScreen> {
       for (String element in userStringList) {
         tempUserList.add(DataModel.fromJson(jsonDecode(element)));
       }
-
       int index = tempUserList.indexWhere((element) => element.id == data.id);
       tempUserList[index] = data;
       List<String> stringUserList = [];
@@ -104,9 +105,21 @@ class _ListViewScreenState extends State<ListViewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    final height = MediaQuery.of(context).size.height;
+    // ignore: deprecated_member_use
+    return WillPopScope(
+      onWillPop: () async {
+        if (selectedItems.isNotEmpty) {
+          setState(() {
+            selectedItems.clear();
+          });
+          return false;
+        } else {
+          return true;
+        }
+      },
       child: Scaffold(
-        backgroundColor: Colors.blueGrey[50],
+        backgroundColor: AppColor.backgroundColor,
         floatingActionButtonLocation: FloatingActionButtonLocation.miniEndFloat,
         floatingActionButton: selectedItems.isEmpty
             ? Padding(
@@ -115,9 +128,11 @@ class _ListViewScreenState extends State<ListViewScreen> {
                   backgroundColor: Colors.orange[500],
                   tooltip: "Add",
                   onPressed: () {
-                    setState(() {
-                      addFieldActive = !addFieldActive;
-                    });
+                    setState(
+                      () {
+                        addFieldActive = !addFieldActive;
+                      },
+                    );
                   },
                   label: const Icon(
                     Icons.add,
@@ -125,7 +140,7 @@ class _ListViewScreenState extends State<ListViewScreen> {
                   ),
                 ),
               )
-            : Text(""),
+            : const Text(""),
         //Bottom Sheet...........
         bottomSheet: selectedItems.isNotEmpty
             ? Container(
@@ -159,44 +174,44 @@ class _ListViewScreenState extends State<ListViewScreen> {
                           : const Text(""),
                       //Delete Button.....
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 20),
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: InkWell(
                           onTap: () {
-                            if(!isUpdating){
+                            if (!isUpdating) {
                               showDialog(
-                              context: context,
-                              builder: (context) {
-                                return AlertDialog(
-                                  content: const Text(
-                                    "Delete this data?",
-                                    style: TextStyle(color: Colors.black),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                      },
-                                      child: const Text(
-                                        "No",
-                                        style: TextStyle(color: Colors.black),
-                                      ),
+                                context: context,
+                                builder: (context) {
+                                  return AlertDialog(
+                                    content: const Text(
+                                      "Delete this data?",
+                                      style: TextStyle(color: Colors.black),
                                     ),
-                                    TextButton(
-                                      onPressed: () async {
-                                        Navigator.pop(context);
-                                        await deleteData(
-                                            itemList: selectedItems);
-                                        getData();
-                                      },
-                                      child: const Text(
-                                        "Yes",
-                                        style: TextStyle(color: Colors.black),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text(
+                                          "No",
+                                          style: TextStyle(color: Colors.black),
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
+                                      TextButton(
+                                        onPressed: () async {
+                                          Navigator.pop(context);
+                                          await deleteData(
+                                              itemList: selectedItems);
+                                          getData();
+                                        },
+                                        child: const Text(
+                                          "Yes",
+                                          style: TextStyle(color: Colors.black),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
                             }
                           },
                           child: const Column(
@@ -214,11 +229,11 @@ class _ListViewScreenState extends State<ListViewScreen> {
             userList.isNotEmpty
                 ? Padding(
                     padding: EdgeInsets.only(
-                        top: 8, bottom: selectedItems.isNotEmpty ? 68 : 10),
+                        bottom: selectedItems.isNotEmpty ? 68 : 5),
                     child: ListView.builder(
                         itemCount: userList.length,
                         itemBuilder: (context, index) {
-                          //User Lile....
+                          DateTime date = DateTime.now();
                           return Padding(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 15, vertical: 1.5),
@@ -234,10 +249,11 @@ class _ListViewScreenState extends State<ListViewScreen> {
                                   isTileHovered = false;
                                 });
                               },
+                              //User Lile....
                               child: Card(
-                                elevation: 1.5,
+                                elevation: 1,
                                 child: SizedBox(
-                                  height: 80,
+                                  height: height * 0.116,
                                   child: ListTile(
                                     onTap: () {
                                       if (addFieldActive) {
@@ -275,19 +291,23 @@ class _ListViewScreenState extends State<ListViewScreen> {
                                     ),
                                     tileColor: isTileHovered
                                         ? hoverIndex == index
-                                            ? Colors.grey[300]
-                                            : Colors.white
-                                        : Colors.white,
+                                            ? AppColor.hoverColor
+                                            : AppColor.tileColor
+                                        : AppColor.tileColor,
                                     //Name....
                                     title: Text(
                                       '${userList[index].name}',
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w600),
+                                      style: TextStyle(
+                                          fontSize: height * 0.022,
+                                          fontWeight: FontWeight.w800),
                                     ),
+                                    //Number....
                                     subtitle: Text(
-                                      "${userList[index].number}",
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w600),
+                                      "${userList[index].number}\n${date.day}-0${date.month}-${date.year}",
+                                      style: TextStyle(
+                                          fontSize: height * 0.0175,
+                                          color: Colors.grey[600],
+                                          fontWeight: FontWeight.w400),
                                     ),
                                     trailing: Transform.scale(
                                       scale: 1,
@@ -681,7 +701,7 @@ class _ListViewScreenState extends State<ListViewScreen> {
                       ),
                     ),
                   )
-                : Text(""),
+                : const Text(""),
           ],
         ),
       ),
